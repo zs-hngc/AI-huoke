@@ -1,0 +1,2 @@
+# 运行时数据目录（客户库 customers.json / 平台线索池 platform_leads.json / 创作历史 store.json 均由服务端自动生成）
+# 已加入 .gitignore，请勿把含真实客户信息的 json 提交到仓库

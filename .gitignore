@@ -1,0 +1,21 @@
+# IDE / 工具
+.idea/
+.workbuddy/
+
+# 环境变量与密钥（切勿提交）
+.env
+*.env.local
+
+# 运行时数据
+*.db
+*.db-shm
+*.db-wal
+*.bak
+data/backups/
+data/exports/
+exports/
+backups/
+
+# 依赖与日志
+node_modules/
+*.log

@@ -1,0 +1,16 @@
+# 密钥（含真实 API Key，禁止提交）
+.ai-tuoke/.env
+ai-tuoke/.env
+
+# 运行时数据（含真实客户/线索，禁止提交）
+ai-tuoke/data/*.json
+ai-tuoke/data/customers.json
+ai-tuoke/data/platform_leads.json
+ai-tuoke/data/platform_tokens.json
+ai-tuoke/data/store.json
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+*.log
+node_modules/

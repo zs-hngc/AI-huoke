@@ -1,0 +1,2379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI超级员工 - 智能拓客系统</title>
+    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .auth-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .auth-panel {
+            width: min(420px, calc(100vw - 24px));
+            background: rgba(15, 23, 42, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            color: #e2e8f0;
+        }
+        .auth-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+        .auth-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin: 8px 0 16px;
+            line-height: 1.5;
+        }
+        .auth-status {
+            min-height: 18px;
+            margin-top: 12px;
+            color: #fbbf24;
+            font-size: 12px;
+        }
+        .user-role {
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span class="logo-text">AI超级员工</span>
+                <span class="logo-badge">v2.0</span>
+            </div>
+        </div>
+        <div class="topbar-center">
+            <!-- 搜索框 -->
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="搜索功能、客户、关键词..." id="globalSearch">
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-item" id="notificationBtn">
+                <i class="fas fa-bell"></i>
+                <span class="badge">3</span>
+            </div>
+            <div class="topbar-item" id="apiStatus">
+                <i class="fas fa-circle text-success"></i>
+                <span>API已连接</span>
+            </div>
+            <div class="topbar-item user-avatar" id="userInfoBox">
+                <i class="fas fa-user-circle"></i>
+                <span id="currentUserName">管理员</span>
+                <span class="badge user-role" id="userRoleLabel">管理员</span>
+                <button class="btn btn-xs btn-ghost" id="logoutBtn" type="button"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="authModal" class="auth-modal" style="display:flex;">
+        <div class="auth-panel">
+            <div class="auth-header">
+                <i class="fas fa-shield-alt"></i>
+                <span>AI超级员工 · 登录</span>
+            </div>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="loginUsername" class="form-control" value="admin" placeholder="admin / sales">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="loginPassword" class="form-control" value="admin123" placeholder="请输入密码">
+            </div>
+            <div class="auth-hint">默认账号：admin / admin123（管理员）或 sales / sales123（销售）</div>
+            <button class="btn btn-primary" id="loginBtn" type="button">登录系统</button>
+            <div id="loginStatus" class="auth-status"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- 左侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">主要功能</div>
+
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>控制台</span>
+                </a>
+
+                <div class="nav-section-title">获客模块</div>
+
+                <a href="#" class="nav-item" data-page="gongyu-tuoke">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span>公域拓客</span>
+                    <span class="nav-tag hot">热</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="sixin-huoqu">
+                    <i class="fas fa-comment-dots"></i>
+                    <span>私信获客</span>
+                    <span class="nav-tag new">新</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="huashu">
+                    <i class="fas fa-book"></i>
+                    <span>话术库</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="platform">
+                    <i class="fas fa-plug"></i>
+                    <span>平台接入</span>
+                    <span class="nav-tag hot">热</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="gongzhuan-si">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>公转私</span>
+                    <span class="nav-tag new">新</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="ai-xiaoguan">
+                    <i class="fas fa-crown"></i>
+                    <span>AI销冠</span>
+                </a>
+
+                <div class="nav-section-title">智能服务</div>
+
+                <a href="#" class="nav-item" data-page="ai-renshi">
+                    <i class="fas fa-user-tie"></i>
+                    <span>AI人事</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="ai-kefu">
+                    <i class="fas fa-headset"></i>
+                    <span>AI客服</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="falv-zhuanyuan">
+                    <i class="fas fa-gavel"></i>
+                    <span>法务专员</span>
+                </a>
+
+                <div class="nav-section-title">创作与管理</div>
+
+                <a href="#" class="nav-item" data-page="qiye-zhinao">
+                    <i class="fas fa-brain"></i>
+                    <span>企业智脑</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="ai-chuangzuo">
+                    <i class="fas fa-magic"></i>
+                    <span>AI创作</span>
+                    <span class="nav-tag vip">VIP</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="kehu-guanli">
+                    <i class="fas fa-address-book"></i>
+                    <span>客户管理</span>
+                    <span class="nav-tag hot">库</span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="genjin-tixing">
+                    <i class="fas fa-bell"></i>
+                    <span>跟进提醒</span>
+                    <span class="nav-tag warn" id="navRemindBadge" style="display:none"></span>
+                </a>
+
+                <a href="#" class="nav-item" data-page="kanban">
+                    <i class="fas fa-columns"></i>
+                    <span>状态看板</span>
+                    <span class="nav-tag hot">拖</span>
+                </a>
+
+                <div class="nav-section-bottom">
+                    <a href="#" class="nav-item" data-page="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>系统设置</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content" id="mainContent">
+
+            <!-- ========== 页面: 控制台 Dashboard ========== -->
+            <div class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h1><i class="fas fa-th-large"></i> 控制台</h1>
+                    <p>欢迎回来！今日数据概览</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statTotalCustomers">0</div>
+                            <div class="stat-label">累计获客（客户库）</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statHighIntention">0</div>
+                            <div class="stat-label">高意向客户</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-icon"><i class="fas fa-inbox"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statPlatformLeads">0</div>
+                            <div class="stat-label">平台线索（抖音/小红书）</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-info">
+                        <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statWeekNew">0</div>
+                            <div class="stat-label">本周新增</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 获客趋势与分布 -->
+                <div class="section-block">
+                    <div class="section-header">
+                        <h2><i class="fas fa-chart-line"></i> 获客趋势与分布</h2>
+                        <span class="section-subtitle">基于真实客户库与平台线索</span>
+                    </div>
+                    <div class="dash-grid">
+                        <div class="card dash-card-wide">
+                            <div class="card-header"><i class="fas fa-chart-area"></i> 近 30 天新增客户</div>
+                            <div class="card-body"><div id="dashTrend"><span class="text-muted">加载中…</span></div></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-sitemap"></i> 客户来源分布</div>
+                            <div class="card-body"><div id="dashSource"><span class="text-muted">加载中…</span></div></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-layer-group"></i> 客户意向等级</div>
+                            <div class="card-body"><div id="dashLevel"><span class="text-muted">加载中…</span></div></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-inbox"></i> 平台线索概览</div>
+                            <div class="card-body"><div id="dashPlatform"><span class="text-muted">加载中…</span></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 八大功能入口 -->
+                <div class="section-block">
+                    <div class="section-header">
+                        <h2><i class="fas fa-th"></i> 八大功能 · 全面覆盖</h2>
+                        <span class="section-subtitle">售营销 精销售 会获客</span>
+                    </div>
+                    <div class="feature-grid">
+                        <div class="feature-card" onclick="navigateTo('gongyu-tuoke')">
+                            <div class="feature-card-header bg-purple-light">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <span>公域拓客</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 地图获客</li>
+                                <li><i class="fas fa-check"></i> 抖音截留 — 支持多账号同时运行</li>
+                                <li><i class="fas fa-check"></i> 小红书截留 — 支持多账号同时运行</li>
+                                <li><i class="fas fa-check"></i> 直播间获客 — 抖音、小红书、快手</li>
+                                <li><i class="fas fa-check"></i> 关键词获客 — 全平台搜索关键词</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('gongzhuan-si')">
+                            <div class="feature-card-header bg-blue-light">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>公转私</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 抖音私信接客 —— AI自动聊天</li>
+                                <li><i class="fas fa-check"></i> 抖音大模型智能体</li>
+                                <li><i class="fas fa-check"></i> 抖转小微、企微</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('ai-xiaoguan')">
+                            <div class="feature-card-header bg-orange-light">
+                                <i class="fas fa-crown"></i>
+                                <span>AI销冠</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 自动加好友，智能拟人聊天</li>
+                                <li><i class="fas fa-check"></i> 主动营销，激活沉睡客户</li>
+                                <li><i class="fas fa-check"></i> 自动发朋友圈点赞评论</li>
+                                <li><i class="fas fa-check"></i> 跨账号代客代聊，多账号管理</li>
+                                <li><i class="fas fa-check"></i> 千人千面群发</li>
+                                <li><i class="fas fa-check"></i> 大模型智能体接入</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('ai-renshi')">
+                            <div class="feature-card-header bg-green-light">
+                                <i class="fas fa-user-tie"></i>
+                                <span>AI人事</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> BOSS授权</li>
+                                <li><i class="fas fa-check"></i> 自动筛选简历，自动给求职者打招呼</li>
+                                <li><i class="fas fa-check"></i> 自动聊天，自动回答问题</li>
+                                <li><i class="fas fa-check"></i> 大模型接入</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('ai-kefu')">
+                            <div class="feature-card-header bg-teal-light">
+                                <i class="fas fa-headset"></i>
+                                <span>AI客服</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 微信客服</li>
+                                <li><i class="fas fa-check"></i> 企业微信客服</li>
+                                <li><i class="fas fa-check"></i> 抖音客服</li>
+                                <li><i class="fas fa-check"></i> 标准化服务，话术流程规范管理</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('falv-zhuanyuan')">
+                            <div class="feature-card-header bg-red-light">
+                                <i class="fas fa-gavel"></i>
+                                <span>法务专员</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 法务咨询</li>
+                                <li><i class="fas fa-check"></i> 法律检索、法条清晰、案例全面</li>
+                                <li><i class="fas fa-check"></i> 合同审查、排查漏洞、标注风险、合规建议</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('qiye-zhinao')">
+                            <div class="feature-card-header bg-indigo-light">
+                                <i class="fas fa-brain"></i>
+                                <span>企业智脑</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 内容创作</li>
+                                <li><i class="fas fa-check"></i> 设计创意</li>
+                                <li><i class="fas fa-check"></i> 数据分析，搭载四维智能数据分析能力</li>
+                                <li><i class="fas fa-check"></i> 工作汇报、全程可视化监管、团队统一管理</li>
+                            </ul>
+                        </div>
+                        <div class="feature-card" onclick="navigateTo('ai-chuangzuo')">
+                            <div class="feature-card-header bg-pink-light">
+                                <i class="fas fa-magic"></i>
+                                <span>AI创作</span>
+                            </div>
+                            <ul class="feature-list">
+                                <li><i class="fas fa-check"></i> 短视频矩阵，全自动智能剪辑</li>
+                                <li><i class="fas fa-check"></i> 数字人分身、不用真人出镜</li>
+                                <li><i class="fas fa-check"></i> seedance</li>
+                                <li><i class="fas fa-check"></i> 文生视频</li>
+                                <li><i class="fas fa-check"></i> 爆款生成</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer-branding">创联科航控股</div>
+                </div>
+
+                <!-- 实时动态 -->
+                <div class="section-block">
+                    <div class="section-header">
+                        <h2><i class="fas fa-clock"></i> 实时动态</h2>
+                    </div>
+                    <div class="activity-feed" id="activityFeed">
+                        <!-- 动态由JS填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 公域拓客 ========== -->
+            <div class="page" id="page-gongyu-tuoke">
+                <div class="page-header">
+                    <h1><i class="fas fa-map-marked-alt"></i> 公域拓客</h1>
+                    <p>全平台精准获客 - 地图 / 抖音 / 小红书 / 直播间 / 关键词</p>
+                </div>
+
+                <!-- 子标签页切换 -->
+                <div class="sub-tabs">
+                    <button class="sub-tab active" data-subtab="map">地图获客</button>
+                    <button class="sub-tab" data-subtab="douyin">抖音截留</button>
+                    <button class="sub-tab" data-subtab="xhs">小红书截留</button>
+                    <button class="sub-tab" data-subtab="live">直播间获客</button>
+                    <button class="sub-tab" data-subtab="keyword">关键词获客</button>
+                </div>
+
+                <!-- 地图获客面板 -->
+                <div class="sub-panel active" id="subtab-map">
+                    <div class="panel-row">
+                        <div class="panel-left" style="flex:0 0 350px;">
+                            <div class="card">
+                                <div class="card-header"><i class="fas fa-search-location"></i> 地图搜索配置</div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label>搜索地区（省 / 市 / 区·县）</label>
+                                        <div class="region-cascade">
+                                            <select class="form-control" id="provinceSelect"><option value="">省 / 直辖市</option></select>
+                                            <select class="form-control" id="citySelect" disabled><option value="">市</option></select>
+                                            <select class="form-control" id="countySelect" disabled><option value="">区 / 县</option></select>
+                                        </div>
+                                        <div class="region-current" id="regionCurrent">已选：全国（请逐级选择，可精确到县）</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>行业/关键词</label>
+                                        <input type="text" class="form-control" id="mapKeyword" placeholder="如：汽车4S店、餐饮..." value="汽车4S店">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>采集范围（公里）</label>
+                                        <input type="range" min="5" max="50" value="20" class="form-range" id="mapRange">
+                                        <span class="range-value" id="mapRangeValue">20 km</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>目标数量</label>
+                                        <input type="number" class="form-control" id="mapTarget" value="100" min="10" max="1000">
+                                    </div>
+                                    <button class="btn btn-primary btn-block" onclick="startMapCrawl()">
+                                        <i class="fas fa-play"></i> 开始地图获客
+                                    </button>
+                                    <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="stopMapCrawl()">
+                                        <i class="fas fa-stop"></i> 停止
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-right">
+                            <div class="card map-container">
+                                <div class="map-view-wrap">
+                                    <div id="mapView"></div>
+                                    <div class="map-legend">
+                                        <span><i class="dot dot-red"></i> 有电话</span>
+                                        <span><i class="dot dot-gray"></i> 无电话</span>
+                                    </div>
+                                    <div class="map-region-tag" id="mapRegionTag">未开始采集</div>
+                                </div>
+                                <div class="map-stats-bar">
+                                    <span><i class="fas fa-map-pin"></i> 已发现: <strong id="mapFoundCount">0</strong> 个商家</span>
+                                    <span><i class="fas fa-phone"></i> 已获取电话: <strong id="mapPhoneCount">0</strong> 条</span>
+                                    <span><i class="fas fa-check-circle"></i> 有效率: <strong id="mapRate">0%</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 采集结果表格 -->
+                    <div class="card mt-16">
+                        <div class="card-header-row">
+                            <span><i class="fas fa-list"></i> 地图获客结果</span>
+                            <div class="card-actions">
+                                    <button class="btn btn-sm btn-primary" onclick="importMapToCustomers()" id="importMapBtn" disabled><i class="fas fa-address-book"></i> 导入客户库</button>
+                                    <button class="btn btn-sm btn-outline" onclick="exportMapCSV()"><i class="fas fa-download"></i> 导出Excel</button>
+                                    <button class="btn btn-sm btn-outline"><i class="fas fa-filter"></i> 筛选</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="mapResultTable">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="mapSelectAll" onclick="toggleMapSelectAll(this)"></th>
+                                        <th>商户名称</th>
+                                        <th>地址</th>
+                                        <th>电话</th>
+                                        <th>行业</th>
+                                        <th>距离</th>
+                                        <th>评分</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mapResultBody">
+                                    <!-- JS填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination">
+                            <span id="mapTotalRecords">共 0 条记录</span>
+                            <div class="pagination">
+                                <a href="#">&laquo;</a>
+                                <a href="#" class="active">1</a>
+                                <a href="#">2</a>
+                                <a href="#">3</a>
+                                <a href="#">&raquo;</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 抖音截留面板 -->
+                <div class="sub-panel" id="subtab-douyin">
+                    <div class="card">
+                        <div class="card-header"><i class="fab fa-tiktok"></i> 抖音截留配置</div>
+                        <div class="card-body">
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label>搜索关键词</label>
+                                    <input type="text" class="form-control" placeholder="输入产品相关关键词" value="二手车交易">
+                                </div>
+                                <div class="form-group">
+                                    <label>运行账号数</label>
+                                    <select class="form-control">
+                                        <option>1个账号</option>
+                                        <option selected>3个账号</option>
+                                        <option>5个账号</option>
+                                        <option>10个账号</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>每账号采集量</label>
+                                    <input type="number" class="form-control" value="200" min="10" max="500">
+                                </div>
+                                <div class="form-group">
+                                    <label>采集类型</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" checked> 评论用户</label>
+                                        <label><input type="checkbox" checked> 点赞用户</label>
+                                        <label><input type="checkbox"> 关注用户</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-primary" onclick="startDouyinCrawl()"><i class="fas fa-play"></i> 启动抖音截流</button>
+                                <button class="btn btn-warning"><i class="fas fa-pause"></i> 暂停</button>
+                                <button class="btn btn-danger"><i class="fas fa-stop"></i> 终止</button>
+                                <div class="progress-inline">
+                                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="douyinProgress" style="width:0%"></div></div>
+                                    <span id="douyinProgressText">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 实时监控面板 - 匹配截图中的功能展示 -->
+                    <div class="card mt-16">
+                        <div class="card-header-row">
+                            <span><i class="fas fa-video"></i> 实时监控 - 直播间/评论区</span>
+                            <div class="status-indicator live">
+                                <span class="pulse-dot"></span> 监控中
+                            </div>
+                        </div>
+                        <div class="monitor-grid">
+                            <!-- 左侧：视频/直播画面区 -->
+                            <div class="monitor-video">
+                                <div class="video-frame">
+                                    <div class="video-placeholder">
+                                        <i class="fab fa-tiktok"></i>
+                                        <p>直播/视频画面</p>
+                                        <div class="video-overlay-info">
+                                            <span class="tag tag-purple">实时监控中</span>
+                                            <span class="tag tag-orange"><i class="fas fa-eye"></i> 在线 1,234人</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 视频下方信息 -->
+                                <div class="video-info-bar">
+                                    <span><i class="fas fa-user"></i> 博主：XX车行官方</span>
+                                    <span><i class="fas fa-heart"></i> 点赞：5.6万</span>
+                                    <span><i class="fas fa-comment"></i> 评论：2,341</span>
+                                </div>
+                            </div>
+
+                            <!-- 右侧：评论区 + 私信列表 -->
+                            <div class="monitor-data">
+                                <div class="monitor-tabs">
+                                    <button class="monitor-tab active" data-monitor="comments">评论区实时消息</button>
+                                    <button class="monitor-tab" data-monitor="dm">私信意向客户</button>
+                                </div>
+                                <div class="monitor-content" id="monitorCommentsList">
+                                    <!-- 由JS填充评论数据 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 截留结果表格 -->
+                    <div class="card mt-16">
+                        <div class="card-header-row">
+                            <span><i class="fas fa-table"></i> 抖音截留数据 <span class="badge-count">共 8,324 条</span></span>
+                            <div class="card-actions">
+                                <button class="btn btn-sm btn-primary"><i class="fas fa-robot"></i> AI分析意向</button>
+                                <button class="btn btn-sm btn-outline"><i class="fas fa-download"></i> 导出Excel</button>
+                                <button class="btn btn-sm btn-outline"><i class="fas fa-filter"></i> 高级筛选</button>
+                            </div>
+                        </div>
+                        <div class="filter-bar">
+                            <input type="text" placeholder="按昵称/留言内容搜索..." class="form-control form-control-sm">
+                            <select class="form-control form-control-sm">
+                                <option>全部平台</option>
+                                <option>抖音</option>
+                            </select>
+                            <select class="form-control form-control-sm">
+                                <option>全部意向</option>
+                                <option>高意向</option>
+                                <option>中意向</option>
+                                <option>低意向</option>
+                            </select>
+                            <input type="date" class="form-control form-control-sm">
+                            <button class="btn btn-sm btn-outline"><i class="fas fa-sync"></i> 刷新</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="douyinResultTable">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox"></th>
+                                        <th>平台来源</th>
+                                        <th>视频标题</th>
+                                        <th>联系人</th>
+                                        <th>留言内容</th>
+                                        <th>联系方式</th>
+                                        <th>IP属地</th>
+                                        <th>评论时间</th>
+                                        <th>意向等级</th>
+                                        <th>查看用户主页</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="douyinResultBody">
+                                    <!-- JS填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination">
+                            <span>共 8,324 条 &nbsp;|&nbsp; 第 1/83 页</span>
+                            <div class="pagination">
+                                <a href="#">&laquo;</a>
+                                <a href="#" class="active">1</a>
+                                <a href="#">2</a>
+                                <a href="#">3</a>
+                                <a href="#">4</a>
+                                <a href="#">5</a>
+                                <span>...</span>
+                                <a href="#">83</a>
+                                <a href="#">&raquo;</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 小红书截留面板 -->
+                <div class="sub-panel" id="subtab-xhs">
+                    <div class="card">
+                        <div class="card-header"><i class="fab fa-instagram"></i> 小红书截留配置</div>
+                        <div class="card-body">
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label>搜索关键词</label>
+                                    <input type="text" class="form-control" placeholder="输入小红书搜索关键词" value="二手车推荐">
+                                </div>
+                                <div class="form-group">
+                                    <label>运行账号数</label>
+                                    <select class="form-control">
+                                        <option>1个账号</option>
+                                        <option selected>3个账号</option>
+                                        <option>5个账号</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>采集笔记数量</label>
+                                    <input type="number" class="form-control" value="100" min="10" max="300">
+                                </div>
+                                <div class="form-group">
+                                    <label>采集内容</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" checked> 笔记评论</label>
+                                        <label><input type="checkbox" checked> 收藏用户</label>
+                                        <label><input type="checkbox"> 点赞用户</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-primary"><i class="fas fa-play"></i> 启动小红书截流</button>
+                                <button class="btn btn-danger"><i class="fas fa-stop"></i> 终止</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-16">
+                        <div class="card-header"><i class="fas fa-list-alt"></i> 小红书截留结果</div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>序号</th><th>笔记标题</th><th>评论用户</th><th>评论内容</th><th>点赞数</th><th>时间</th><th>操作</th></tr>
+                                </thead>
+                                <tbody id="xhsResultBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 直播间获客面板 -->
+                <div class="sub-panel" id="subtab-live">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-broadcast-tower"></i> 直播间获客配置</div>
+                        <div class="card-body">
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label>直播平台</label>
+                                    <div class="checkbox-group horizontal">
+                                        <label class="chip-label"><input type="checkbox" checked> <i class="fab fa-tiktok"></i> 抖音直播</label>
+                                        <label class="chip-label"><input type="checkbox"> <i class="fab fa-instagram"></i> 小红书直播</label>
+                                        <label class="chip-label"><input type="checkbox"> <i class="fas fa-video"></i> 快手直播</label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>监控直播间链接/关键词</label>
+                                    <textarea class="form-control" rows="3" placeholder="每行一个直播间URL或搜索关键词&#10;例如：&#10;https://www.douyin.com/user/xxx&#10;二手车直播&#10;汽车销售"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>监控模式</label>
+                                    <select class="form-control">
+                                        <option>实时弹幕捕获</option>
+                                        <option>评论用户提取</option>
+                                        <option>送礼用户提取</option>
+                                        <option>全部捕获</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>自动回复设置</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" checked> 检测到意向词自动回复</label>
+                                        <label><input type="checkbox"> AI生成个性化回复</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-primary btn-lg"><i class="fas fa-satellite-dish"></i> 启动直播间监控</button>
+                                <button class="btn btn-danger"><i class="fas fa-stop-circle"></i> 停止监控</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 直播间实时监控视图 - 匹配截图中的核心展示 -->
+                    <div class="card mt-16 live-monitor-card">
+                        <div class="card-header-row">
+                            <span><i class="fas fa-satellite-dish"></i> 直播间实时监控</span>
+                            <div class="live-status-badge">
+                                <span class="pulse-dot red"></span> 直播中 - 观看人数: <strong>3,892</strong>
+                            </div>
+                        </div>
+                        <div class="live-monitor-layout">
+                            <!-- 直播画面 -->
+                            <div class="live-video-area">
+                                <div class="video-frame live-frame">
+                                    <div class="video-placeholder">
+                                        <i class="fas fa-video"></i>
+                                        <p>直播间画面</p>
+                                        <div class="live-tags">
+                                            <span class="tag tag-red">🔴 LIVE</span>
+                                            <span class="tag tag-purple"><i class="fas fa-users"></i> 3,892人在看</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 弹幕流 -->
+                                <div class="danmaku-stream" id="danmakuStream">
+                                    <!-- JS填充弹幕 -->
+                                </div>
+                            </div>
+
+                            <!-- 右侧：互动数据分析 -->
+                            <div class="live-analytics">
+                                <div class="analytics-section">
+                                    <h4>实时统计</h4>
+                                    <div class="mini-stats">
+                                        <div class="mini-stat">
+                                            <span class="mini-stat-value">3,892</span>
+                                            <span class="mini-stat-label">在线观众</span>
+                                        </div>
+                                        <div class="mini-stat">
+                                            <span class="mini-stat-value">1,247</span>
+                                            <span class="mini-stat-label">新增进入</span>
+                                        </div>
+                                        <div class="mini-stat">
+                                            <span class="mini-stat-value">856</span>
+                                            <span class="mini-stat-label">互动次数</span>
+                                        </div>
+                                        <div class="mini-stat">
+                                            <span class="mini-stat-value text-danger">42</span>
+                                            <span class="mini-stat-label">高意向线索</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="analytics-section">
+                                    <h4>意向客户捕获 <span class="badge-count">42</span></h4>
+                                    <div class="lead-list" id="liveLeadList">
+                                        <!-- JS填充 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 关键词获客面板 -->
+                <div class="sub-panel" id="subtab-keyword">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-key"></i> 关键词获客 - AI智能拓词</div>
+                        <div class="card-body">
+                            <div class="config-grid">
+                                <div class="form-group" style="flex:2">
+                                    <label>基础关键词</label>
+                                    <input type="text" class="form-control" id="baseKeyword" placeholder="输入产品基础关键词" value="二手车买卖">
+                                </div>
+                                <div class="form-group">
+                                    <label>目标平台</label>
+                                    <select class="form-control">
+                                        <option>全平台</option>
+                                        <option>抖音</option>
+                                        <option>小红书</option>
+                                        <option>快手</option>
+                                        <option>微博</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-primary" onclick="expandKeywords()">
+                                    <i class="fas fa-rocket"></i> AI批量拓词
+                                </button>
+                                <button class="btn btn-outline"><i class="fas fa-upload"></i> 导入TXT</button>
+                                <button class="btn btn-outline"><i class="fas fa-save"></i> 保存到库</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-16">
+                        <div class="card-header">扩展关键词列表</div>
+                        <div class="keyword-cloud" id="keywordCloud">
+                            <!-- JS填充关键词云 -->
+                        </div>
+                    </div>
+
+                    <div class="card mt-16">
+                        <div class="card-header-row">
+                            <span>关键词采集结果</span>
+                            <button class="btn btn-sm btn-outline"><i class="fas fa-download"></i> 导出</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>关键词</th><th>匹配平台</th><th>命中次数</th><th>关联客户数</th><th>热度趋势</th></tr>
+                                </thead>
+                                <tbody id="keywordResultBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 公转私 ========== -->
+            <div class="page" id="page-gongzhuan-si">
+                <div class="page-header">
+                    <h1><i class="fas fa-exchange-alt"></i> 公转私</h1>
+                    <p>抖音私信接客 → AI自动聊天 → 转企微/小微沉淀</p>
+                </div>
+
+                <div class="gongzhuan-layout">
+                    <!-- 左侧：私信对话界面 -->
+                    <div class="chat-main-area">
+                        <div class="card chat-list-card">
+                            <div class="card-header-row">
+                                <span><i class="fas fa-inbox"></i> 私信列表 <span class="badge-count">23条未读</span></span>
+                                <div class="card-actions">
+                                    <input type="text" placeholder="搜索客户..." class="form-control form-control-sm" style="width:160px">
+                                </div>
+                            </div>
+                            <div class="chat-contact-list" id="chatContactList">
+                                <!-- JS填充 -->
+                            </div>
+                        </div>
+
+                        <div class="card chat-window-card">
+                            <div class="chat-window-header">
+                                <div class="chat-user-info">
+                                    <div class="chat-avatar"><i class="fas fa-user"></i></div>
+                                    <div>
+                                        <div class="chat-user-name" id="currentChatUser">张先生</div>
+                                        <div class="chat-user-source"><i class="fab fa-tiktok"></i> 抖音 · 来自视频评论</div>
+                                    </div>
+                                </div>
+                                <div class="chat-actions">
+                                    <span class="intention-tag high">高意向</span>
+                                    <button class="btn btn-sm btn-outline"><i class="fas fa-user-plus"></i> 加好友</button>
+                                    <button class="btn btn-sm btn-primary"><i class="fab fa-weixin"></i> 转企微</button>
+                                </div>
+                            </div>
+                            <div class="chat-messages" id="chatMessages">
+                                <!-- JS填充对话消息 -->
+                            </div>
+                            <div class="chat-input-area">
+                                <div class="ai-reply-preview" id="aiReplyPreview">
+                                    <i class="fas fa-robot"></i> AI建议回复：
+                                    <span id="aiReplyText">您好张先生！看到您在询问这款车的价格，这款车目前有优惠活动哦，方便了解一下您的预算范围吗？</span>
+                                    <button class="btn btn-xs btn-primary" onclick="useAiReply()"><i class="fas fa-paper-plane"></i> 采用</button>
+                                </div>
+                                <div class="chat-input-row">
+                                    <textarea class="form-control chat-textarea" placeholder="输入回复消息..."></textarea>
+                                    <button class="btn btn-primary send-btn"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                                <div class="quick-replies">
+                                    <button class="chip">您好，请问有什么可以帮您？</button>
+                                    <button class="chip">感谢您的关注~</button>
+                                    <button class="chip">这边给您发下详细资料？</button>
+                                    <button class="chip">好的，稍等为您查询</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：AI配置与统计 -->
+                    <div class="gongzhuan-sidebar">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-robot"></i> AI聊天配置</div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>回复风格</label>
+                                    <select class="form-control" id="replyStyle">
+                                        <option>简洁干练</option>
+                                        <option selected>温柔亲和</option>
+                                        <option>专业商务</option>
+                                        <option>幽默风趣</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>自动回复模式</label>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="autoReplyToggle" checked>
+                                        <label for="autoReplyToggle"></label>
+                                        <span>已开启</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>响应速度</label>
+                                    <select class="form-control">
+                                        <option>极速（1-3秒）</option>
+                                        <option selected>正常（3-5秒）</option>
+                                        <option>拟人（5-10秒）</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-16">
+                            <div class="card-header"><i class="fas fa-chart-pie"></i> 今日转化</div>
+                            <div class="card-body">
+                                <div class="conversion-funnel">
+                                    <div class="funnel-step">
+                                        <div class="funnel-bar wide" style="background:#7c3aed;width:100%">收到私信 <strong>156</strong></div>
+                                    </div>
+                                    <div class="funnel-step">
+                                        <div class="funnel-bar" style="background:#8b5cf6;width:78%">AI回复 <strong>122</strong></div>
+                                    </div>
+                                    <div class="funnel-step">
+                                        <div class="funnel-bar" style="background:#a78bfa;width:52%">有效对话 <strong>81</strong></div>
+                                    </div>
+                                    <div class="funnel-step">
+                                        <div class="funnel-bar" style="background:#c4b5fd;width:28%">加好友 <strong>44</strong></div>
+                                    </div>
+                                    <div class="funnel-step">
+                                        <div class="funnel-bar narrow" style="background:#ddd6fe;width:15%">转企微 <strong>23</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-16">
+                            <div class="card-header"><i class="fas fa-history"></i> 最近转化记录</div>
+                            <div class="conversion-list" id="conversionList">
+                                <!-- JS填充 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: AI销冠 ========== -->
+            <div class="page" id="page-ai-xiaoguan">
+                <div class="page-header">
+                    <h1><i class="fas fa-crown"></i> AI销冠</h1>
+                    <p>自动化销售冠军 - 自动加好友 · 拟人聊天 · 朋友圈运营 · 千人千面群发</p>
+                </div>
+
+                <div class="stats-grid mb-16">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-icon"><i class="fas fa-user-plus"></i></div>
+                        <div class="stat-info"><div class="stat-number" id="xg-friends">0</div><div class="stat-label">今日新增好友</div></div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                        <div class="stat-info"><div class="stat-number" id="xg-touch">0</div><div class="stat-label">主动触达客户</div></div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-icon"><i class="fas fa-heart"></i></div>
+                        <div class="stat-info"><div class="stat-number" id="xg-moments2">0</div><div class="stat-label">朋友圈互动</div></div>
+                    </div>
+                    <div class="stat-card stat-danger">
+                        <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
+                        <div class="stat-info"><div class="stat-number" id="xg-group">0</div><div class="stat-label">群发消息数</div></div>
+                    </div>
+                </div>
+
+                <div class="xiaoguan-tabs">
+                    <button class="xiaoguan-tab active" data-xiaoguan="auto-add">自动加好友</button>
+                    <button class="xiaoguan-tab" data-xiaoguan="chat">拟人聊天</button>
+                    <button class="xiaoguan-tab" data-xiaoguan="moments">朋友圈运营</button>
+                    <button class="xiaoguan-tab" data-xiaoguan="mass-send">千人千面群发</button>
+                    <button class="xiaoguan-tab" data-xiaoguan="multi-account">多账号管理</button>
+                </div>
+
+                <!-- 自动加好友 -->
+                <div class="xiaoguan-panel active" id="xiaoguan-auto-add">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-user-plus"></i> 自动加好友任务配置
+                            <span class="xg-status-badge stopped" id="aa-status">已停止</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label>添加来源</label>
+                                    <select class="form-control" id="aa-source">
+                                        <option>群聊成员</option>
+                                        <option>朋友圈互动用户</option>
+                                        <option>通讯录推荐</option>
+                                        <option>附近的人</option>
+                                        <option>指定名单导入</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>每日上限</label>
+                                    <input type="number" class="form-control" id="aa-daily" value="50" min="1" max="200">
+                                </div>
+                                <div class="form-group">
+                                    <label>添加间隔（秒）</label>
+                                    <input type="number" class="form-control" id="aa-interval" value="30" min="10" max="300">
+                                </div>
+                                <div class="form-group">
+                                    <label>验证语模板</label>
+                                    <textarea class="form-control" id="aa-verify" rows="2" placeholder="您好，看到您对XX感兴趣，想加您交个朋友~"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>通过后自动发送</label>
+                                    <input type="text" class="form-control" id="aa-after" placeholder="通过后第一条消息">
+                                </div>
+                                <div class="form-group">
+                                    <label>运行账号</label>
+                                    <select class="form-control" id="aa-account"><option>全部账号</option><option>账号1 - 销售A</option><option>账号2 - 销售B</option></select>
+                                </div>
+                            </div>
+                            <div class="xg-progress" id="aa-progress" style="display:none">
+                                <div class="xg-progress-bar"><div class="xg-progress-fill" id="aa-progress-fill"></div></div>
+                                <div class="xg-progress-text" id="aa-progress-text"></div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-primary btn-lg" id="aa-start"><i class="fas fa-play"></i> 启动自动加好友</button>
+                                <button class="btn btn-danger" id="aa-stop"><i class="fas fa-stop"></i> 停止</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 拟人聊天 -->
+                <div class="xiaoguan-panel" id="xiaoguan-chat">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-comments"></i> AI拟人聊天引擎
+                            <span class="xg-status-badge" style="background:#eef2ff;color:#4f46e5">DeepSeek 驱动</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="info-text">基于大语言模型的拟人化自动聊天系统，根据客户画像和历史对话上下文生成自然、个性化的回复（由 DeepSeek 实时生成）。</p>
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label>聊天场景</label>
+                                    <select class="form-control" id="chat-scene"><option>新好友破冰</option><option>产品咨询</option><option>价格谈判</option><option>售后服务</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>人格设定</label>
+                                    <select class="form-control" id="chat-persona"><option>热情销售型</option><option>专业顾问型</option><option>贴心客服型</option><option>幽默风趣型</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>客户上文（粘贴客户最近说的话）</label>
+                                <textarea class="form-control" id="chat-context" rows="3" placeholder="例如：在吗？你们这个产品怎么收费呀"></textarea>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-primary" id="chat-gen"><i class="fas fa-magic"></i> AI 生成回复</button>
+                                <span class="xg-hint" id="chat-loading" style="display:none">AI 生成中…</span>
+                            </div>
+                            <div class="xg-chat-preview" id="chat-preview" style="display:none">
+                                <div class="xg-bubble xg-bubble-cust"><span class="xg-bubble-who">客户</span><div id="chat-cust-text"></div></div>
+                                <div class="xg-bubble xg-bubble-ai"><span class="xg-bubble-who">AI 销冠</span><div id="chat-ai-text"></div></div>
+                                <div class="action-bar mt-8">
+                                    <button class="btn btn-sm btn-outline" id="chat-copy"><i class="fas fa-copy"></i> 复制回复</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 朋友圈运营 -->
+                <div class="xiaoguan-panel" id="xiaoguan-moments">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-heart"></i> 朋友圈自动运营
+                            <span class="xg-status-badge stopped" id="mo-status">已停止</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="moments-config">
+                                <div class="form-group">
+                                    <label><input type="checkbox" id="mo-like" checked> 自动点赞好友朋友圈</label>
+                                </div>
+                                <div class="form-group">
+                                    <label><input type="checkbox" id="mo-comment" checked> 自动评论（AI生成评论内容）</label>
+                                </div>
+                                <div class="form-group">
+                                    <label>评论风格：</label>
+                                    <div class="chip-group" id="mo-style">
+                                        <button class="chip active" data-style="温馨赞美">温馨赞美</button>
+                                        <button class="chip" data-style="有趣互动">有趣互动</button>
+                                        <button class="chip" data-style="专业点评">专业点评</button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>每日互动上限：</label>
+                                    <input type="number" class="form-control form-control-sm" id="mo-daily" value="100" style="width:100px;display:inline">
+                                </div>
+                                <div class="action-bar mt-16">
+                                    <button class="btn btn-primary" id="mo-start"><i class="fas fa-heart"></i> 启动朋友圈互动</button>
+                                    <button class="btn btn-danger" id="mo-stop"><i class="fas fa-stop"></i> 停止</button>
+                                    <span class="xg-hint" id="mo-count"></span>
+                                </div>
+                            </div>
+                            <hr class="xg-divider">
+                            <div class="form-group">
+                                <label>AI 生成一条朋友圈评论（输入客户朋友圈内容）</label>
+                                <textarea class="form-control" id="mo-content" rows="2" placeholder="例如：今天终于入手了心仪已久的相机，开心～"></textarea>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-outline" id="mo-gen"><i class="fas fa-magic"></i> AI 生成评论</button>
+                                <span class="xg-hint" id="mo-loading" style="display:none">生成中…</span>
+                            </div>
+                            <div class="xg-comment-out" id="mo-comment-out" style="display:none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 千人千面群发 -->
+                <div class="xiaoguan-panel" id="xiaoguan-mass-send">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-bullhorn"></i> 千人千面智能群发</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>选择发送对象</label>
+                                <div class="radio-group" id="ms-target">
+                                    <label><input type="radio" name="sendTarget" value="全部好友" checked> 全部好友</label>
+                                    <label><input type="radio" name="sendTarget" value="按标签分组"> 按标签分组</label>
+                                    <label><input type="radio" name="sendTarget" value="指定名单"> 指定名单</label>
+                                    <label><input type="radio" name="sendTarget" value="高意向客户"> 高意向客户</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>选择 / 编辑群发模板（支持变量 {姓名} {标签} {上次购买} {推荐产品}）</label>
+                                <div class="ms-template-row">
+                                    <select class="form-control" id="ms-template"></select>
+                                    <button class="btn btn-sm btn-outline" id="ms-del-tpl" title="删除模板"><i class="fas fa-trash"></i></button>
+                                </div>
+                                <textarea class="form-control mt-8" id="ms-content" rows="4" placeholder="示例：{姓名}您好！根据您的喜好，我们最近上了{推荐产品}，觉得您可能会喜欢~"></textarea>
+                                <div class="action-bar mt-8">
+                                    <button class="btn btn-sm btn-outline" id="ms-save-tpl"><i class="fas fa-save"></i> 存为模板</button>
+                                </div>
+                            </div>
+                            <div class="xg-preview-box" id="ms-preview" style="display:none">
+                                <div class="xg-preview-title">变量预览（以示例客户渲染）</div>
+                                <div class="xg-preview-text" id="ms-preview-text"></div>
+                            </div>
+                            <div class="form-group mt-16">
+                                <label>发送策略</label>
+                                <div class="config-grid">
+                                    <div><label>每人间隔</label><input type="number" class="form-control" id="ms-interval" value="60" min="30"><small class="text-muted">秒</small></div>
+                                    <div><label>每天上限</label><input type="number" class="form-control" id="ms-daily" value="200" min="10"><small class="text-muted">条</small></div>
+                                    <div><label>最佳时段</label><select class="form-control" id="ms-time"><option>8:00-22:00</option><option>全天</option></select></div>
+                                </div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-outline" id="ms-preview-btn"><i class="fas fa-eye"></i> 预览</button>
+                                <button class="btn btn-primary btn-lg" id="ms-send"><i class="fas fa-rocket"></i> 开始群发</button>
+                            </div>
+                            <div class="xg-history" id="ms-history-wrap" style="display:none">
+                                <div class="xg-history-title">群发记录</div>
+                                <table class="xg-table" id="ms-history"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 多账号管理 -->
+                <div class="xiaoguan-panel" id="xiaoguan-multi-account">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-users-cog"></i> 多账号统一管理
+                            <span class="xg-status-badge" id="acc-summary" style="background:#eef2ff;color:#4f46e5"></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="account-list" id="multiAccountList"></div>
+                            <div class="acc-add-row mt-16">
+                                <input type="text" class="form-control" id="acc-name" placeholder="账号名称，如 销售-D-新号">
+                                <select class="form-control" id="acc-platform"><option>微信</option><option>企微</option></select>
+                                <button class="btn btn-primary" id="acc-add"><i class="fas fa-plus"></i> 添加账号</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: AI人事 ========== -->
+            <div class="page" id="page-ai-renshi">
+                <div class="page-header">
+                    <h1><i class="fas fa-user-tie"></i> AI人事</h1>
+                    <p>BOSS直聘智能招聘助手 - 自动筛简历 · 打招呼 · 面试Q&A</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid" id="renshiStats">
+                    <div class="stat-card"><div class="stat-icon" style="background:#eff6ff;color:#3b82f6"><i class="fas fa-file-alt"></i></div><div><div class="stat-number" id="rsTotal">0</div><div class="stat-label">简历总数</div></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-clock"></i></div><div><div class="stat-number" id="rsPending">0</div><div class="stat-label">待处理</div></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:#ede9fe;color:#8b5cf6"><i class="fas fa-comment-dots"></i></div><div><div class="stat-number" id="rsGreeted">0</div><div class="stat-label">已打招呼</div></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:#dbeafe;color:#2563eb"><i class="fas fa-user-clock"></i></div><div><div class="stat-number" id="rsInterview">0</div><div class="stat-label">面试中</div></div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:#dcfce7;color:#059669"><i class="fas fa-star"></i></div><div><div class="stat-number" id="rsHighMatch">0</div><div class="stat-label">AI推荐(≥80%)</div></div></div>
+                </div>
+
+                <div class="renshi-layout">
+                    <div class="renshi-main">
+                        <div class="card">
+                            <div class="card-header-row">
+                                <span><i class="fas fa-file-alt"></i> 收到简历 <span class="badge-count" id="rsBadge">0份</span></span>
+                                <div class="card-actions">
+                                    <button class="btn btn-sm btn-primary" id="rsScreenBtn" onclick="renshiScreen()"><i class="fas fa-robot"></i> AI批量筛选</button>
+                                    <button class="btn btn-sm btn-outline" onclick="renshiNewResume()"><i class="fas fa-plus"></i> 模拟进线</button>
+                                    <button class="btn btn-sm btn-outline" onclick="renshiExport()"><i class="fas fa-download"></i> 导出</button>
+                                </div>
+                            </div>
+                            <div class="filter-bar">
+                                <select class="form-control form-control-sm" id="rsFilterPos" onchange="renderResumeTable()"><option value="">全部职位</option></select>
+                                <select class="form-control form-control-sm" id="rsFilterStatus" onchange="renderResumeTable()">
+                                    <option value="">全部状态</option><option>待处理</option><option>已打招呼</option><option>面试中</option><option>已录用</option><option>不合适</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline" onclick="initAiRenshi()" title="刷新"><i class="fas fa-sync"></i></button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table" id="resumeTable">
+                                    <thead>
+                                        <tr>
+                                            <th>求职者</th>
+                                            <th>应聘职位</th>
+                                            <th>学历/经验</th>
+                                            <th>AI匹配度</th>
+                                            <th>期望薪资</th>
+                                            <th>最后活跃</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resumeBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="renshi-sidebar">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-cog"></i> 招聘自动化设置</div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label><input type="checkbox" id="rsAutoGreet" checked> 新简历自动打招呼</label>
+                                </div>
+                                <div class="form-group">
+                                    <label>打招呼语（支持 {姓名} {职位} {公司}）：</label>
+                                    <textarea class="form-control" id="rsGreetTpl" rows="3" placeholder="{姓名}您好！看了您的简历非常合适我们的{职位}岗位，有兴趣聊聊吗？"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label><input type="checkbox" id="rsAutoAnswer" checked> AI自动回答求职者问题</label>
+                                </div>
+                                <div class="form-group">
+                                    <label>问答知识库：</label>
+                                    <div class="knowledge-items" id="rsKnowledge"></div>
+                                </div>
+                                <button class="btn btn-primary btn-block" onclick="renshiSaveConfig()"><i class="fas fa-save"></i> 保存配置</button>
+                            </div>
+                        </div>
+                        <div class="card mt-16">
+                            <div class="card-header"><i class="fas fa-headset"></i> AI面试问答测试</div>
+                            <div class="card-body">
+                                <p class="info-text">模拟求职者提问，AI 基于知识库自动作答。</p>
+                                <textarea class="form-control" id="rsQaInput" rows="2" placeholder="如：你们公司加班多吗？五险一金怎么交？"></textarea>
+                                <button class="btn btn-outline btn-block mt-8" onclick="renshiQa()"><i class="fas fa-paper-plane"></i> AI 回答</button>
+                                <div id="rsQaResult" class="qa-result" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 简历详情弹窗 -->
+            <div class="modal-overlay" id="resumeModal" style="display:none">
+                <div class="modal-box" style="max-width:620px">
+                    <div class="modal-header">
+                        <h3 id="resumeModalTitle">简历详情</h3>
+                        <button class="modal-close" onclick="closeModal('resumeModal')">&times;</button>
+                    </div>
+                    <div class="modal-body" id="resumeModalBody"></div>
+                    <div class="modal-footer" id="resumeModalFooter"></div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: AI客服 ========== -->
+            <div class="page" id="page-ai-kefu">
+                <div class="page-header">
+                    <h1><i class="fas fa-headset"></i> AI客服</h1>
+                    <p>多平台统一客服 - 微信 / 企业微信 / 抖音 · 标准化话术流程管理</p>
+                </div>
+
+                <div class="kefu-platform-tabs">
+                    <button class="kefu-platform-btn active" data-platform="wechat"><i class="fab fa-weixin"></i> 微信客服</button>
+                    <button class="kefu-platform-btn" data-platform="qywx"><i class="fas fa-building"></i> 企业微信</button>
+                    <button class="kefu-platform-btn" data-platform="douyin"><i class="fab fa-tiktok"></i> 抖音客服</button>
+                </div>
+
+                <div class="kefu-workbench">
+                    <div class="kefu-conversation-panel card">
+                        <div class="card-header-row">
+                            <span>会话列表 <span class="badge-count">--</span></span>
+                            <div class="card-actions" style="display:flex;gap:6px;align-items:center;">
+                                <select class="form-control form-control-sm" id="kefuFilter"><option>全部会话</option><option>待接待</option><option>进行中</option><option>已结束</option></select>
+                                <button class="btn btn-xs btn-primary" onclick="_kefuSimulateNew()" title="模拟新客户进入会话"><i class="fas fa-plus"></i> 新进线</button>
+                            </div>
+                        </div>
+                        <div class="conversation-list" id="conversationList"></div>
+                    </div>
+
+                    <div class="kefu-chat-panel card">
+                        <div class="chat-window-header">
+                            <div class="chat-user-info">
+                                <div class="chat-avatar"><i class="fas fa-user"></i></div>
+                                <div>
+                                    <div class="chat-user-name">李女士</div>
+                                    <div class="chat-user-source"><i class="fab fa-weixin"></i> 微信客服 · 订单咨询</div>
+                                </div>
+                            </div>
+                            <div class="chat-actions">
+                                <span class="intention-tag medium">咨询中</span>
+                                <button class="btn btn-sm btn-outline"><i class="fas fa-flag"></i> 标记</button>
+                            </div>
+                        </div>
+                        <div class="chat-messages kefu-messages" id="kefuChatMessages"></div>
+                        <div class="kefu-script-panel">
+                            <div class="script-header"><i class="fas fa-book"></i> 话术库 <button class="btn btn-xs btn-primary" style="float:right" onclick="genKefuScripts()"><i class="fas fa-robot"></i> AI生成</button></div>
+                            <div class="script-categories">
+                                <button class="script-cat active">常见问题</button>
+                                <button class="script-cat">产品介绍</button>
+                                <button class="script-cat">售后政策</button>
+                                <button class="script-cat">促销活动</button>
+                            </div>
+                            <div class="script-list" id="scriptList"></div>
+                        </div>
+                        <div class="chat-input-area">
+                            <div class="ai-reply-preview" id="kefuAiReply">
+                                <i class="fas fa-robot"></i> AI建议：<span>发送消息后，AI将根据上下文自动生成建议回复…</span>
+                                <button class="btn btn-xs btn-primary" onclick="useKefuReply()">采用</button>
+                            </div>
+                            <div class="chat-input-row">
+                                <textarea class="form-control chat-textarea" id="kefuInput" placeholder="输入回复...（Enter发送，Shift+Enter换行）"></textarea>
+                                <div style="display:flex;gap:4px;">
+                                    <button class="btn btn-outline btn-sm" onclick="_kefuAiReply()" title="让AI根据对话上下文生成回复"><i class="fas fa-robot"></i> AI回复</button>
+                                    <button class="btn btn-primary send-btn"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kefu-side-panel">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-user"></i> 客户信息</div>
+                            <div class="card-body customer-profile">
+                                <div class="profile-field"><label>姓名：</label><span>李女士</span></div>
+                                <div class="profile-field"><label>来源：</label><span>微信客服</span></div>
+                                <div class="profile-field"><label>会话数：</label><span>3次</span></div>
+                                <div class="profile-field"><label>标签：</label><span class="tag tag-purple">VIP</span> <span class="tag tag-blue">老客户</span></div>
+                            </div>
+                        </div>
+                        <div class="card mt-16">
+                            <div class="card-header"><i class="fas fa-chart-line"></i> 今日客服数据</div>
+                            <div class="card-body mini-stats-vertical">
+                                <div class="mini-stat-v"><span class="label">接待量</span><span class="value">186</span></div>
+                                <div class="mini-stat-v"><span class="label">平均响应</span><span class="value">15秒</span></div>
+                                <div class="mini-stat-v"><span class="label">解决率</span><span class="value">94.2%</span></div>
+                                <div class="mini-stat-v"><span class="label">满意度</span><span class="value">4.8/5</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 法务专员 ========== -->
+            <div class="page" id="page-falv-zhuanyuan">
+                <div class="page-header">
+                    <h1><i class="fas fa-gavel"></i> 法务专员</h1>
+                    <p>AI法律助手 - 法务咨询 · 法律检索 · 合同审查</p>
+                </div>
+
+                <div class="falv-tabs">
+                    <button class="falv-tab active" data-falv="consult">法务咨询</button>
+                    <button class="falv-tab" data-falv="search">法律检索</button>
+                    <button class="falv-tab" data-falv="contract">合同审查</button>
+                </div>
+
+                <!-- 法务咨询 -->
+                <div class="falv-panel active" id="falv-consult">
+                    <div class="card consult-card">
+                        <div class="consult-layout">
+                            <div class="consult-chat">
+                                <div class="consult-messages" id="consultMessages">
+                                    <div class="msg system-msg">
+                                        <i class="fas fa-gavel"></i> 您好！我是AI法务助手，可以为您提供专业的法律咨询服务。请描述您的法律问题。
+                                    </div>
+                                </div>
+                                <div class="consult-input">
+                                    <textarea class="form-control" id="legalQuestion" placeholder="请描述您的法律问题，例如：公司合同纠纷、劳动争议、知识产权等..." rows="3"></textarea>
+                                    <button class="btn btn-primary btn-block" onclick="askLegal()"><i class="fas fa-gavel"></i> 提交咨询</button>
+                                </div>
+                            </div>
+                            <div class="consult-topics">
+                                <h4>常见法律问题</h4>
+                                <div class="topic-list">
+                                    <button class="topic-btn" onclick="askLegalTopic('劳动合同纠纷')">劳动合同纠纷</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('合同违约')">合同违约</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('知识产权侵权')">知识产权侵权</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('公司股权纠纷')">公司股权纠纷</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('消费者权益保护')">消费者权益保护</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('房屋租赁纠纷')">房屋租赁纠纷</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('交通事故赔偿')">交通事故赔偿</button>
+                                    <button class="topic-btn" onclick="askLegalTopic('债务追偿')">债务追偿</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 法律检索 -->
+                <div class="falv-panel" id="falv-search">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-search"></i> 法律法规智能检索</div>
+                        <div class="card-body">
+                            <div class="search-box-lg">
+                                <input type="text" class="form-control form-control-lg" placeholder="输入法条名称、案件类型或关键词..." value="合同纠纷">
+                                <button class="btn btn-primary btn-lg"><i class="fas fa-search"></i> 搜索</button>
+                            </div>
+                            <div class="law-results" id="lawSearchResults">
+                                <!-- JS填充 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 合同审查 -->
+                <div class="falv-panel" id="falv-contract">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-file-contract"></i> AI合同审查</div>
+                        <div class="card-body">
+                            <div class="upload-zone" id="contractUploadZone">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>点击上传或拖拽合同文件到此区域</p>
+                                <p class="text-muted">支持 PDF、Word、图片格式</p>
+                            </div>
+                            <div class="contract-review-result" id="contractReviewResult" style="display:none">
+                                <div class="review-summary">
+                                    <h4>审查报告</h4>
+                                    <div class="risk-level danger">发现 <strong>3</strong> 处高风险条款</div>
+                                    <div class="review-details" id="reviewDetails"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 企业智脑 ========== -->
+            <div class="page" id="page-qiye-zhinao">
+                <div class="page-header">
+                    <h1><i class="fas fa-brain"></i> 企业智脑</h1>
+                    <p>内容创作 · 设计创意 · 数据分析 · 工作汇报 · 团队管理</p>
+                </div>
+
+                <div class="zhinao-grid">
+                    <div class="zhinao-card large" onclick="openZhinaoTool('content')">
+                        <div class="zhinao-card-icon bg-gradient-purple"><i class="fas fa-pen-nib"></i></div>
+                        <h3>内容创作</h3>
+                        <p>AI一键生成营销文案、公众号文章、产品描述、SEO优化内容</p>
+                        <div class="zhinao-tools">
+                            <span class="chip">营销文案</span>
+                            <span class="chip">公众号文章</span>
+                            <span class="chip">产品描述</span>
+                            <span class="chip">小红书笔记</span>
+                        </div>
+                    </div>
+                    <div class="zhinao-card" onclick="openZhinaoTool('design')">
+                        <div class="zhinao-card-icon bg-gradient-blue"><i class="fas fa-palette"></i></div>
+                        <h3>设计创意</h3>
+                        <p>AI辅助海报设计、Logo生成、配色方案、排版建议</p>
+                    </div>
+                    <div class="zhinao-card" onclick="openZhinaoTool('analysis')">
+                        <div class="zhinao-card-icon bg-gradient-green"><i class="fas fa-chart-bar"></i></div>
+                        <h3>数据分析</h3>
+                        <p>四维智能数据分析 - 销售、获客、转化、客户全链路洞察</p>
+                    </div>
+                    <div class="zhinao-card" onclick="openZhinaoTool('report')">
+                        <div class="zhinao-card-icon bg-gradient-orange"><i class="fas fa-file-alt"></i></div>
+                        <h3>工作汇报</h3>
+                        <p>自动生成日报/周报/月报、项目进度追踪、团队绩效看板</p>
+                    </div>
+                    <div class="zhinao-card" onclick="openZhinaoTool('team')">
+                        <div class="zhinao-card-icon bg-gradient-teal"><i class="fas fa-users"></i></div>
+                        <h3>团队管理</h3>
+                        <p>全程可视化监管、任务分配、权限管理、协作工作流</p>
+                    </div>
+                </div>
+
+                <!-- 数据概览仪表板 -->
+                <div class="card mt-24">
+                    <div class="card-header-row">
+                        <span><i class="fas fa-chart-line"></i> 四维数据分析概览</span>
+                        <select class="form-control form-control-sm"><option>近7天</option><option>近30天</option><option>近90天</option></select>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-box">
+                            <h4>获客趋势</h4>
+                            <div class="chart-placeholder" id="chartAcquisition">
+                                <canvas id="acquisitionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4>转化漏斗</h4>
+                            <div class="chart-placeholder" id="chartConversion">
+                                <div class="simple-funnel">
+                                    <div class="sf-step" style="width:100%;background:#7c3aed">曝光 50,000</div>
+                                    <div class="sf-step" style="width:72%;background:#8b5cf6">互动 36,000</div>
+                                    <div class="sf-step" style="width:48%;background:#a78bfa">线索 24,000</div>
+                                    <div class="sf-step" style="width:26%;background:#c4b5fd">商机 13,000</div>
+                                    <div class="sf-step" style="width:14%;background:#ddd6fe">成交 7,000</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4>各渠道占比</h4>
+                            <div class="chart-placeholder" id="chartChannels">
+                                <div class="pie-chart-css">
+                                    <div class="pie-segment" style="--p:40;--c:#7c3aed">抖音 40%</div>
+                                    <div class="pie-segment" style="--p:25;--c:#8b5cf6">小红书 25%</div>
+                                    <div class="pie-segment" style="--p:15;--c:#a78bfa">直播 15%</div>
+                                    <div class="pie-segment" style="--p:12;--c:#c4b5fd">地图 12%</div>
+                                    <div class="pie-segment" style="--p:8;--c:#ede9fe">其他 8%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4>团队业绩排行</h4>
+                            <div class="ranking-list" id="teamRanking">
+                                <!-- JS填充 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: AI创作 ========== -->
+            <div class="page" id="page-ai-chuangzuo">
+                <div class="page-header">
+                    <h1><i class="fas fa-magic"></i> AI创作</h1>
+                    <p>短视频矩阵 · 数字人分身 · 文生视频 · 爆款生成</p>
+                </div>
+
+                <div class="chuangzuo-grid">
+                    <div class="chuangzuo-card featured">
+                        <div class="chuangzuo-card-header bg-gradient-pink">
+                            <i class="fas fa-film"></i>
+                            <span>短视频矩阵</span>
+                            <span class="vip-badge">VIP</span>
+                        </div>
+                        <div class="chuangzuo-card-body">
+                            <p>全自动智能剪辑 - 一键批量生产短视频内容</p>
+                            <div class="chuangzuo-form">
+                                <div class="form-group">
+                                    <label>素材主题</label>
+                                    <input type="text" class="form-control" placeholder="如：产品展示、使用教程、客户见证">
+                                </div>
+                                <div class="form-group">
+                                    <label>产出数量</label>
+                                    <input type="number" class="form-control" value="10" min="1" max="50">
+                                </div>
+                                <div class="form-group">
+                                    <label>视频时长</label>
+                                    <select class="form-control"><option>15秒</option><option selected>30秒</option><option>60秒</option><option>90秒</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>风格</label>
+                                    <div class="style-options">
+                                        <button class="style-opt active">快节奏卡点</button>
+                                        <button class="style-opt">情感叙事</button>
+                                        <button class="style-opt">干货科普</button>
+                                        <button class="style-opt">种草推荐</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-block btn-lg">
+                                    <i class="fas fa-wand-magic-sparkles"></i> 开始智能剪辑
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chuangzuo-card">
+                        <div class="chuangzuo-card-header bg-gradient-blue">
+                            <i class="fas fa-user-astronaut"></i>
+                            <span>数字人分身</span>
+                        </div>
+                        <div class="chuangzuo-card-body">
+                            <p>不用真人出镜 - AI数字人代你口播</p>
+                            <div class="avatar-selector">
+                                <div class="avatar-option selected">
+                                    <div class="avatar-img female"></div>
+                                    <span>职场女性</span>
+                                </div>
+                                <div class="avatar-option">
+                                    <div class="avatar-img male"></div>
+                                    <span>商务男士</span>
+                                </div>
+                                <div class="avatar-option">
+                                    <div class="avatar-img custom"></div>
+                                    <span>自定义</span>
+                                </div>
+                            </div>
+                            <div class="form-group mt-12">
+                                <label>输入文案</label>
+                                <textarea class="form-control" rows="3" placeholder="输入要数字人朗读的文案内容..."></textarea>
+                            </div>
+                            <button class="btn btn-primary btn-block"><i class="fas fa-play-circle"></i> 生成数字人视频</button>
+                        </div>
+                    </div>
+
+                    <div class="chuangzuo-card">
+                        <div class="chuangzuo-card-header bg-gradient-green">
+                            <i class="fas fa-video"></i>
+                            <span>文生视频 (Seedance)</span>
+                        </div>
+                        <div class="chuangzuo-card-body">
+                            <p>输入文字描述，AI自动生成视频</p>
+                            <div class="form-group">
+                                <label>视频描述</label>
+                                <textarea class="form-control" rows="3" placeholder="描述你想生成的视频画面和情节..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>视频比例</label>
+                                <div class="ratio-options">
+                                    <button class="ratio-opt active">16:9 横屏</button>
+                                    <button class="ratio-opt">9:16 竖屏</button>
+                                    <button class="ratio-opt">1:1 方形</button>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-block"><i class="fas fa-wand-magic-sparkles"></i> 生成视频</button>
+                        </div>
+                    </div>
+
+                    <div class="chuangzuo-card">
+                        <div class="chuangzuo-card-header bg-gradient-orange">
+                            <i class="fas fa-fire"></i>
+                            <span>爆款生成器</span>
+                        </div>
+                        <div class="chuangzuo-card-body">
+                            <p>AI分析热门趋势，一键生成爆款内容</p>
+                            <div class="form-group">
+                                <label>目标领域</label>
+                                <select class="form-control"><option>汽车</option><option>美妆</option><option>美食</option><option>教育</option><option>科技</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>平台</label>
+                                <div class="platform-checks">
+                                    <label><input type="checkbox" checked> 抖音</label>
+                                    <label><input type="checkbox" checked> 小红书</label>
+                                    <label><input type="checkbox"> 快手</label>
+                                    <label><input type="checkbox"> 视频号</label>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-block"><i class="fas fa-fire-alt"></i> 分析并生成爆款</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 作品管理 -->
+                <div class="card mt-24">
+                    <div class="card-header-row">
+                        <span><i class="fas fa-photo-video"></i> 我的作品</span>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> 新建</button>
+                            <button class="btn btn-sm btn-outline"><i class="fas fa-folder"></i> 管理</button>
+                        </div>
+                    </div>
+                    <div class="works-gallery" id="worksGallery">
+                        <!-- JS填充作品卡片 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 系统设置 ========== -->
+            <div class="page" id="page-settings">
+                <div class="page-header">
+                    <h1><i class="fas fa-cog"></i> 系统设置</h1>
+                    <p>API配置 · 账号管理 · 数据管理</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-key"></i> API 配置</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>DeepSeek API Key</label>
+                                <input type="password" class="form-control" id="apiKeyInput" placeholder="请填写 DeepSeek API Key">
+                                <small class="text-muted">用于AI拓词、意向分析、自动回复等功能 <span id="configSourceHint"></span></small>
+                            </div>
+                            <div class="form-group">
+                                <label>API Base URL</label>
+                                <input type="text" class="form-control" id="apiBaseUrlInput" value="https://api.deepseek.com">
+                            </div>
+                            <div class="form-group">
+                                <label>模型选择</label>
+                                <select class="form-control" id="modelSelect">
+                                    <option value="deepseek-chat">deepseek-chat</option>
+                                    <option value="deepseek-coder">deepseek-coder</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-outline" id="testConnectionBtn" type="button"><i class="fas fa-plug"></i> 测试连接</button>
+                                <span id="apiTestResult" class="ml-8"></span>
+                            </div>
+                            <button class="btn btn-primary" id="saveApiConfigBtn" type="button"><i class="fas fa-save"></i> 保存配置</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-user-cog"></i> 产品信息配置</div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>产品名称</label>
+                                <input type="text" class="form-control" id="productNameInput" placeholder="示例产品">
+                            </div>
+                            <div class="form-group">
+                                <label>产品描述</label>
+                                <textarea class="form-control" rows="2" id="productDescInput" placeholder="这是一款示例产品，用于演示拓客工具的功能"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>目标客户</label>
+                                <input type="text" class="form-control" id="targetCustomerInput" placeholder="需要示例产品的企业或个人用户">
+                            </div>
+                            <div class="form-group">
+                                <label>产品优势</label>
+                                <textarea class="form-control" rows="2" id="productAdvantagesInput" placeholder="高效便捷、成本低廉、易于使用"></textarea>
+                            </div>
+                            <button class="btn btn-primary" id="saveProductBtn" type="button"><i class="fas fa-save"></i> 保存</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-database"></i> 数据管理</div>
+                        <div class="card-body">
+                            <div class="data-stats">
+                                <div class="data-stat-item">
+                                    <span class="ds-value" id="settingsCustomerCount">0</span>
+                                    <span class="ds-label">客户数据</span>
+                                </div>
+                                <div class="data-stat-item">
+                                    <span class="ds-value" id="settingsTemplateCount">0</span>
+                                    <span class="ds-label">模板数</span>
+                                </div>
+                                <div class="data-stat-item">
+                                    <span class="ds-value" id="settingsBackupCount">0</span>
+                                    <span class="ds-label">备份数</span>
+                                </div>
+                            </div>
+                            <hr>
+                            <button class="btn btn-outline" id="exportDataBtn" type="button"><i class="fas fa-download"></i> 导出全部数据</button>
+                            <button class="btn btn-outline ml-8" id="clearCacheBtn" type="button"><i class="fas fa-trash-alt"></i> 清理缓存</button>
+                            <button class="btn btn-danger ml-8" id="resetDataBtn" type="button"><i class="fas fa-exclamation-triangle"></i> 重置所有数据</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 私信获客 ========== -->
+            <div class="page" id="page-sixin-huoqu">
+                <div class="page-header">
+                    <h1><i class="fas fa-comment-dots"></i> 私信获客</h1>
+                    <p class="page-sub">人工粘贴私信 → AI 解析线索 → 你筛选入客户库 → AI 生成预选回复 → 你人工发送</p>
+                </div>
+
+                <div class="compliance-banner">
+                    <i class="fas fa-shield-alt"></i>
+                    <span><strong>合规说明：</strong>本工具<strong>不自动抓取、不自动发送</strong>任何平台私信。请手动从抖音 / 小红书 / 微信等官方 App 复制你<strong>合法收到</strong>的私信内容粘贴到下方，由 AI 辅助解析线索并生成回复草稿；最终<strong>由你本人筛选客户、人工在平台上发送回复</strong>。</span>
+                </div>
+
+                <div class="sixin-grid">
+                    <!-- 左：粘贴区 -->
+                    <div class="card">
+                        <div class="card-head"><h3><i class="fas fa-paste"></i> 粘贴私信内容</h3></div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <label>来源平台</label>
+                                <select id="sixinPlatform" class="form-control">
+                                    <option value="抖音">抖音</option>
+                                    <option value="小红书">小红书</option>
+                                    <option value="微信">微信</option>
+                                    <option value="微博">微博</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>私信对话 / 评论内容</label>
+                                <textarea id="sixinInput" class="form-control" rows="10" placeholder="在此粘贴从平台官方 App 复制的私信对话或评论内容。&#10;例如：&#10;用户A：你好，你们这个课程怎么收费？&#10;用户B：想了解下你们的服务，在杭州有门店吗？"></textarea>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-primary" onclick="parseSixin()"><i class="fas fa-robot"></i> AI 解析为线索</button>
+                                <button class="btn btn-outline" onclick="clearSixinInput()"><i class="fas fa-eraser"></i> 清空</button>
+                            </div>
+                            <p class="hint-text">提示：内容越完整，解析越准。一次可粘贴多条对话，AI 会自动拆分出多位潜客。</p>
+                        </div>
+                    </div>
+
+                    <!-- 右：解析结果 -->
+                    <div class="card">
+                        <div class="card-head">
+                            <h3><i class="fas fa-list-ul"></i> 解析出的线索</h3>
+                            <span class="badge-count" id="sixinCount">0 条</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="sixinLeads" class="sixin-leads">
+                                <div class="empty-cell"><i class="fas fa-inbox"></i><p>暂无线索。粘贴私信内容后点击「AI 解析为线索」。</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 话术库 ========== -->
+            <div class="page" id="page-huashu">
+                <div class="page-header">
+                    <h1><i class="fas fa-book"></i> 话术库</h1>
+                    <p class="page-sub">管理常用回复 / 话术模板，在「私信获客」中一键插入</p>
+                </div>
+                <div class="huashu-toolbar">
+                    <input type="text" id="hsSearch" class="form-control" placeholder="搜索模板标题 / 内容 / 分类…" oninput="renderTemplates()">
+                    <select id="hsCatFilter" class="form-control" onchange="renderTemplates()"></select>
+                    <button class="btn btn-primary" onclick="openTemplateForm()"><i class="fas fa-plus"></i> 新建模板</button>
+                </div>
+                <div id="hsList" class="huashu-list"></div>
+            </div>
+
+            <!-- ========== 页面: 平台接入 ========== -->
+            <div class="page" id="page-platform">
+                <div class="page-head">
+                    <div>
+                        <h2><i class="fas fa-plug"></i> 平台接入</h2>
+                        <p class="page-sub">合规自动获客：跳转官方授权页登录 → 平台通过 Webhook 推送私信/评论 → AI 意向分级 → 人工筛选入客户库</p>
+                    </div>
+                </div>
+
+                <div class="compliance-banner">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>本模块仅通过<strong>抖音 / 小红书官方开放平台 OAuth 授权</strong>获取你账号收到的私信与评论，<strong>不爬取、不模拟点击、不自动发送</strong>。需企业号 / 专业号资质与公网 HTTPS 部署方可接收实时推送；本地可用「模拟推送」测试完整链路。</span>
+                </div>
+
+                <!-- 平台连接状态 -->
+                <div class="card">
+                    <div class="card-head">
+                        <h3><i class="fas fa-link"></i> 平台连接</h3>
+                        <span class="badge-count" id="platformPubNote"></span>
+                    </div>
+                    <div class="card-body">
+                        <div id="platformCards" class="platform-cards"></div>
+                    </div>
+                </div>
+
+                <!-- 模拟推送测试 -->
+                <div class="card">
+                    <div class="card-head"><h3><i class="fas fa-vial"></i> 本地模拟推送（无需凭证 / 公网）</h3></div>
+                    <div class="card-body">
+                        <div class="form-row" style="align-items:stretch;gap:10px;">
+                            <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:220px;">
+                                <div style="display:flex;gap:8px;">
+                                    <select id="simPlatform" class="form-control" style="flex:1">
+                                        <option value="douyin">抖音</option>
+                                        <option value="xiaohongshu">小红书</option>
+                                    </select>
+                                    <select id="simSource" class="form-control" style="flex:1">
+                                        <option value="私信">私信</option>
+                                        <option value="视频留言">视频留言</option>
+                                        <option value="直播发言">直播发言</option>
+                                    </select>
+                                </div>
+                                <textarea id="simContent" class="form-control" rows="2" placeholder="在此输入自定义私信/评论内容（留空则使用下方示例话术），例如：你们这个产品怎么买？杭州有门店吗？"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="simulatePlatformPush()" style="align-self:flex-start"><i class="fas fa-paper-plane"></i> 模拟推送一条</button>
+                        </div>
+                        <p class="page-sub" style="margin:8px 0 0">点击后将构造一条示例消息，走与真实 Webhook 完全相同的「AI 分级 → 入线索池」流程。</p>
+                    </div>
+                </div>
+
+                <!-- 线索池 -->
+                <div class="card">
+                    <div class="card-head">
+                        <h3><i class="fas fa-inbox"></i> 线索池（待人工筛选）</h3>
+                        <button class="btn btn-sm btn-outline" onclick="loadPlatformLeads()"><i class="fas fa-sync"></i> 刷新</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="platformLeads" class="platform-leads">
+                            <div class="empty-cell"><i class="fas fa-inbox"></i><p>暂无线索。连接平台或点击上方「模拟推送」试试。</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 页面: 客户管理 ========== -->
+            <div class="page" id="page-kehu-guanli">
+                <div class="page-header">
+                    <h1><i class="fas fa-address-book"></i> 客户管理</h1>
+                    <p>统一管理地图获客与多渠道线索，沉淀私域客户资产</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="custTotal">0</div>
+                            <div class="stat-label">客户总数</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="custHigh">0</div>
+                            <div class="stat-label">高意向客户</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="custPending">0</div>
+                            <div class="stat-label">待跟进</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-info">
+                        <div class="stat-icon"><i class="fas fa-calendar-plus"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="custWeek">0</div>
+                            <div class="stat-label">本周新增</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 工具栏 + 表格 -->
+                <div class="card mt-16">
+                    <div class="card-header-row">
+                        <span><i class="fas fa-filter"></i> 客户列表</span>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-primary" onclick="openCustModal()"><i class="fas fa-plus"></i> 新增客户</button>
+                            <button class="btn btn-sm btn-outline" onclick="exportCustomers('csv')"><i class="fas fa-file-csv"></i> 导出CSV</button>
+                            <button class="btn btn-sm btn-outline" onclick="exportCustomers('xls')"><i class="fas fa-file-excel"></i> 导出Excel</button>
+                            <button class="btn btn-sm btn-outline" onclick="openDedupModal()"><i class="fas fa-object-group"></i> 去重合并</button>
+                        </div>
+                    </div>
+                    <div class="cust-toolbar">
+                        <div class="cust-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="custSearch" placeholder="搜索名称 / 电话 / 地址 / 备注" oninput="custSearchDebounce()">
+                        </div>
+                        <select id="custFilterStatus" onchange="loadCustomers()">
+                            <option value="">全部状态</option>
+                            <option value="新客">新客</option>
+                            <option value="跟进中">跟进中</option>
+                            <option value="已成交">已成交</option>
+                            <option value="已流失">已流失</option>
+                        </select>
+                        <select id="custFilterSource" onchange="loadCustomers()">
+                            <option value="">全部来源</option>
+                            <option value="地图获客">地图获客</option>
+                            <option value="手动添加">手动添加</option>
+                            <option value="抖音截留">抖音截留</option>
+                            <option value="小红书">小红书</option>
+                            <option value="直播间">直播间</option>
+                            <option value="关键词">关键词</option>
+                        </select>
+                        <select id="custFilterTag" onchange="loadCustomers()">
+                            <option value="">全部标签</option>
+                            <option value="高意向">高意向</option>
+                            <option value="待跟进">待跟进</option>
+                            <option value="已联系">已联系</option>
+                            <option value="重点客户">重点客户</option>
+                            <option value="VIP">VIP</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <div class="cust-batchbar" id="custBatchBar" style="display:none">
+                            <span class="batch-count" id="custSelCount">已选 0 项</span>
+                            <div class="batch-group">
+                                <input type="text" id="batchTagInput" placeholder="标签，如 重点客户" class="input-sm">
+                                <button class="btn btn-xs btn-primary" onclick="batchTag()"><i class="fas fa-tag"></i> 打标签</button>
+                            </div>
+                            <div class="batch-group">
+                                <input type="text" id="batchOwnerInput" placeholder="归属销售姓名" class="input-sm">
+                                <button class="btn btn-xs btn-outline" onclick="batchAssign()"><i class="fas fa-user-check"></i> 分配</button>
+                            </div>
+                            <button class="btn btn-xs btn-ghost" onclick="clearCustSelection()"><i class="fas fa-times"></i> 取消</button>
+                        </div>
+                        <table class="data-table" id="custTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px"><input type="checkbox" id="custSelectAll" onchange="toggleCustSelectAll(this)" title="全选/取消"></th>
+                                    <th>客户名称</th>
+                                    <th>电话</th>
+                                    <th>地区</th>
+                                    <th>行业/类型</th>
+                                    <th>标签</th>
+                                    <th>来源</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="custBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="table-pagination" id="custPagination"></div>
+                </div>
+            </div>
+
+            <!-- ========== 新增/编辑客户弹窗 ========== -->
+            <div class="modal-overlay" id="custModal" style="display:none">
+                <div class="modal-box">
+                    <div class="modal-header">
+                        <h3 id="custModalTitle">新增客户</h3>
+                        <button class="modal-close" onclick="closeCustModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="custId">
+                        <div class="form-row">
+                            <label>客户名称 *</label>
+                            <input type="text" id="custName" placeholder="如：某某科技有限公司">
+                        </div>
+                        <div class="form-row">
+                            <label>电话</label>
+                            <input type="text" id="custPhone" placeholder="联系电话">
+                        </div>
+                        <div class="form-row two">
+                            <div>
+                                <label>地区</label>
+                                <input type="text" id="custRegion" placeholder="如：江苏省苏州市">
+                            </div>
+                            <div>
+                                <label>行业/类型</label>
+                                <input type="text" id="custType" placeholder="如：汽车4S店">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>地址</label>
+                            <input type="text" id="custAddress" placeholder="详细地址">
+                        </div>
+                        <div class="form-row two">
+                            <div>
+                                <label>来源</label>
+                                <select id="custSource">
+                                    <option value="手动添加">手动添加</option>
+                                    <option value="地图获客">地图获客</option>
+                                    <option value="抖音截留">抖音截留</option>
+                                    <option value="小红书">小红书</option>
+                                    <option value="直播间">直播间</option>
+                                    <option value="关键词">关键词</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>状态</label>
+                                <select id="custStatus">
+                                    <option value="新客">新客</option>
+                                    <option value="跟进中">跟进中</option>
+                                    <option value="已成交">已成交</option>
+                                    <option value="已流失">已流失</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>标签（逗号分隔）</label>
+                            <input type="text" id="custTags" placeholder="如：高意向, 待跟进">
+                        </div>
+                        <div class="form-row">
+                            <label>归属销售</label>
+                            <input type="text" id="custOwner" placeholder="负责跟进的销售">
+                        </div>
+                        <div class="form-row">
+                            <label>备注</label>
+                            <textarea id="custNote" rows="2" placeholder="补充说明"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeCustModal()">取消</button>
+                        <button class="btn btn-primary" onclick="saveCust()">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 客户详情抽屉 ========== -->
+            <div class="drawer-overlay" id="custDrawer" style="display:none" onclick="if(event.target===this)closeCustDrawer()">
+                <div class="drawer-box">
+                    <div class="drawer-header">
+                        <h3 id="drawerName">客户详情</h3>
+                        <button class="modal-close" onclick="closeCustDrawer()">&times;</button>
+                    </div>
+                    <div class="drawer-body" id="drawerBody"></div>
+                </div>
+            </div>
+
+            <!-- ========== 跟进提醒 ========== -->
+            <div class="page" id="page-genjin-tixing">
+                <div class="page-header">
+                    <h1><i class="fas fa-bell"></i> 跟进提醒</h1>
+                    <p>基于设置的跟进时间，自动汇总逾期 / 今日 / 即将到期的客户待办</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card stat-danger">
+                        <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="todoOverdue">0</div>
+                            <div class="stat-label">已逾期</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="todoToday">0</div>
+                            <div class="stat-label">今日待跟进</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-info">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="todoUpcoming">0</div>
+                            <div class="stat-label">即将到期</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-primary">
+                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="todoTotal">0</div>
+                            <div class="stat-label">全部待办</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-16">
+                    <div class="card-header-row">
+                        <div class="todo-tabs">
+                            <button class="todo-tab active" onclick="switchTodoTab('all')">全部 <span id="tabAll">0</span></button>
+                            <button class="todo-tab" onclick="switchTodoTab('overdue')">逾期 <span id="tabOverdue">0</span></button>
+                            <button class="todo-tab" onclick="switchTodoTab('today')">今日 <span id="tabToday">0</span></button>
+                            <button class="todo-tab" onclick="switchTodoTab('upcoming')">即将到期 <span id="tabUpcoming">0</span></button>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-outline" onclick="initGenjinTixing()"><i class="fas fa-sync"></i> 刷新</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>客户</th>
+                                    <th>状态</th>
+                                    <th>下次跟进时间</th>
+                                    <th>提醒备注</th>
+                                    <th>剩余 / 逾期</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todoBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="todoEmpty" class="empty-state" style="display:none">
+                        <i class="fas fa-check-circle"></i>
+                        <p>暂无待跟进提醒，去客户详情里「设置跟进提醒」吧</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 状态流转看板 ========== -->
+            <div class="page" id="page-kanban">
+                <div class="page-header">
+                    <h1><i class="fas fa-columns"></i> 状态流转看板</h1>
+                    <p>拖拽客户卡片在阶段间流转，状态实时同步到客户库；点击卡片查看 / 编辑详情</p>
+                </div>
+                <div class="kanban-toolbar">
+                    <div class="kanban-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="kanbanSearch" placeholder="搜索客户姓名 / 电话 / 标签…" oninput="renderKanban()">
+                    </div>
+                    <div class="kanban-tool-right">
+                        <span class="kanban-total">共 <b id="kanbanTotal">0</b> 位客户</span>
+                        <button class="btn btn-sm btn-outline" onclick="loadKanbanData()"><i class="fas fa-sync"></i> 刷新</button>
+                    </div>
+                </div>
+                <div class="kanban-board" id="kanbanBoard"></div>
+            </div>
+
+            <!-- ========== 通用确认弹窗 ========== -->
+            <div class="modal-overlay" id="confirmModal" style="display:none">
+                <div class="modal-box" style="max-width:380px">
+                    <div class="modal-header">
+                        <h3 id="confirmTitle">请确认</h3>
+                        <button class="modal-close" onclick="closeConfirm(false)">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="confirmMsg" style="margin:4px 0 0;color:var(--text-secondary);line-height:1.6"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeConfirm(false)">取消</button>
+                        <button class="btn btn-danger" id="confirmOkBtn" onclick="closeConfirm(true)">确定</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 数据重置弹窗（替代原生 confirm/prompt，兼容嵌入式预览） ========== -->
+            <div class="modal-overlay" id="resetModal" style="display:none">
+                <div class="modal-box" style="max-width:460px">
+                    <div class="modal-header">
+                        <h3>数据重置</h3>
+                        <button class="modal-close" onclick="closeResetModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="margin:4px 0 12px;color:var(--text-secondary);line-height:1.7">
+                            将清空 <b style="color:var(--text-primary)">客户 / 跟进记录 / 话术模板 / AI 历史 / 平台线索</b>，
+                            并清理演示模块数据。<br>
+                            <b style="color:var(--accent-red)">清空前会自动生成一份完整备份</b>（备份保留在 <code>data/backups/</code>）。
+                        </p>
+                        <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px">
+                            请输入确认口令 <code style="color:var(--accent-red);font-weight:600">RESET_ALL_DATA</code> 以继续：
+                        </label>
+                        <input type="text" class="form-control" id="resetConfirmInput" placeholder="RESET_ALL_DATA" autocomplete="off" spellcheck="false">
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--text-secondary)">
+                            <input type="checkbox" id="resetKeepUsers" checked>
+                            保留登录账号与页面配置（推荐）
+                        </label>
+                        <p id="resetError" style="display:none;margin:10px 0 0;color:var(--accent-red);font-size:13px"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeResetModal()">取消</button>
+                        <button class="btn btn-danger" id="resetConfirmBtn">确认重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 模板选择浮层 ========== -->
+            <div class="modal-overlay" id="templatePickerModal" style="display:none">
+                <div class="modal-box" style="max-width:560px">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-book"></i> 插入话术模板</h3>
+                        <button class="modal-close" onclick="closeTemplatePicker()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="tpSearch" class="form-control" placeholder="搜索模板…" oninput="renderTemplatePicker()">
+                        <div id="tpList" class="tp-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 模板编辑弹窗 ========== -->
+            <div class="modal-overlay" id="templateFormModal" style="display:none">
+                <div class="modal-box" style="max-width:520px">
+                    <div class="modal-header">
+                        <h3 id="tfTitle">新建模板</h3>
+                        <button class="modal-close" onclick="closeTemplateForm()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="tfId">
+                        <div class="form-group">
+                            <label>模板标题</label>
+                            <input type="text" id="tfTitleInput" class="form-control" placeholder="如：初次问候">
+                        </div>
+                        <div class="form-group">
+                            <label>分类</label>
+                            <input type="text" id="tfCategory" class="form-control" placeholder="如：开场白 / 咨询回复 / 邀约 / 维护">
+                        </div>
+                        <div class="form-group">
+                            <label>模板内容</label>
+                            <textarea id="tfContent" class="form-control" rows="5" placeholder="输入常用话术内容…"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeTemplateForm()">取消</button>
+                        <button class="btn btn-primary" onclick="saveTemplate()">保存</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 弹窗: AI生成器 (企业智脑 / AI创作 共用) -->
+    <div class="modal-overlay" id="aiGenModal" style="display:none">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3><i class="fas fa-robot"></i> <span id="aiGenTitle">AI生成</span></h3>
+                <button class="modal-close" onclick="closeModal('aiGenModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label id="aiGenTypeLabel">生成类型</label>
+                    <select class="form-control" id="aiGenType"></select>
+                </div>
+                <div class="form-group">
+                    <label id="aiGenTopicLabel">主题 / 要求</label>
+                    <textarea class="form-control" id="aiGenTopic" rows="3" placeholder="输入主题或具体要求..."></textarea>
+                </div>
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="aiGenBtn" onclick="runAiGen()"><i class="fas fa-rocket"></i> 生成</button>
+                    <span id="aiGenStatus" class="ml-8"></span>
+                </div>
+                <div class="ai-gen-result" id="aiGenResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗: 通知中心 -->
+    <div class="modal-overlay" id="notificationModal" style="display:none">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-bell"></i> 通知中心</h3>
+                <button class="modal-close" onclick="closeModal('notificationModal')">&times;</button>
+            </div>
+            <div class="modal-body notification-list" id="notificationList"></div>
+        </div>
+    </div>
+
+            <!-- ========== 客户去重合并 ========== -->
+            <div class="modal-overlay" id="dedupModal" style="display:none">
+                <div class="modal-box" style="max-width:780px">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-object-group"></i> 客户去重合并</h3>
+                        <button class="modal-close" onclick="closeDedupModal()">&times;</button>
+                    </div>
+                    <div class="modal-body" id="dedupBody"></div>
+                </div>
+            </div>
+
+    <script src="app.js?v=15"></script>
+</body>
+</html>

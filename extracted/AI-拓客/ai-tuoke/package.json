@@ -1,0 +1,10 @@
+{
+  "name": "ai-tuoke",
+  "version": "3.0.0",
+  "description": "科航AI超级员工复刻版 - 零依赖 Node 后端 (SQLite 数据层)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --experimental-sqlite server.js"
+  },
+  "private": true
+}
